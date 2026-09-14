@@ -856,7 +856,7 @@
         .cbox.h180{height:180px}.cbox.h220{height:220px}
         #overview .cbox.h220{height:150px}
         #overview .cbox.h180{height:135px}
-        #nodes,#consumption,#alerts{
+        #nodes,#consumption,#alerts,#automation{
             border-radius:28px;
             padding:18px;
             background:rgba(255,255,255,.15);
@@ -1175,11 +1175,11 @@
         .kcard-lbl,.pt,.avg-lbl{color:var(--client-ink)}
         .kcard-sub,.avg-detail,.cons-unit{color:var(--client-muted)}
         .kcard-val{font-size:28px}
-        #nodes,#consumption,#alerts{
+        #nodes,#consumption,#alerts,#automation{
             padding:22px;
             background:rgba(248,248,242,.15);
         }
-        #nodes .sh h2,#consumption .sh h2,#alerts .sh h2{color:#fff}
+        #nodes .sh h2,#consumption .sh h2,#alerts .sh h2,#automation .sh h2{color:#fff}
         @media(max-width:1180px){
             .app{grid-template-columns:92px minmax(0,1fr)}
             .sidebar{padding:12px}
@@ -1297,7 +1297,7 @@
         .kcard-sub{font-size:12px}
         .ph{gap:12px;align-items:center}
         .pt{font-size:13px;line-height:1.25}
-        #nodes,#consumption,#alerts{
+        #nodes,#consumption,#alerts,#automation{
             min-height:620px;
         }
         @media(max-width:1180px){
@@ -1902,7 +1902,8 @@
             .room-tab{white-space:nowrap;font-size:11px!important;padding:5px 12px!important}
             .room-tab i{margin-right:3px!important}
             .notif-dropdown{right:-60px;width:300px!important}
-            .house-widget{display:none!important}
+            #house3d-container{display:none!important}
+            #house3d-legend{display:none!important}
             .overview-temp .ph button{font-size:10px!important;padding:4px 10px!important}
             #node-container{grid-template-columns:1fr!important;padding:12px!important}
             .node-card{padding:14px!important}
@@ -1919,6 +1920,34 @@
             .overview-summary>.panel{min-height:120px!important}
             .weather-details{gap:6px!important}
             .weather-detail-item{font-size:9px!important;padding:2px 6px!important}
+        }
+
+        /* ═══════════════ IR REMOTE MODALS ═══════════════ */
+        .ir-modal-backdrop{position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+        .ir-modal-backdrop.open{display:flex}
+        .ir-modal{width:min(420px,92vw);background:rgba(248,248,242,.97);color:#24231e;border-radius:20px;padding:20px;box-shadow:0 30px 80px rgba(0,0,0,.35)}
+        .ir-modal h3{font-size:15px;font-weight:900;margin-bottom:12px}
+        .ir-modal label{display:block;font-size:11px;font-weight:800;color:#6c6c62;margin:10px 0 4px}
+        .ir-modal input,.ir-modal select{width:100%;box-sizing:border-box;padding:8px 12px;border-radius:10px;border:1px solid rgba(0,0,0,.12);background:#fff;color:#24231e;font:13px Inter,sans-serif}
+        .ir-modal select option{background:#fff;color:#24231e}
+        .ir-modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+        .ir-device-card{cursor:pointer}
+        .ir-action-row{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:12px;background:rgba(0,0,0,.04)}
+        .ir-action-row .status-pending{font-size:10px;color:var(--amber);font-weight:800}
+        html[data-theme="dark"] .ir-modal{background:rgba(28,28,24,.97)!important;color:#f7f7f2!important}
+        html[data-theme="dark"] .ir-modal label{color:rgba(247,247,242,.62)!important}
+        html[data-theme="dark"] .ir-modal input,html[data-theme="dark"] .ir-modal select{background:rgba(255,255,255,.08)!important;border-color:rgba(255,255,255,.15)!important;color:#f7f7f2!important}
+        html[data-theme="dark"] .ir-action-row{background:rgba(255,255,255,.08)!important;color:#f7f7f2!important}
+
+        /* ═══════════════ ROOM DETAIL FULL-SCREEN PANEL ═══════════════ */
+        .room-detail-backdrop{position:fixed;inset:0;z-index:950;background:rgba(10,10,8,.72);backdrop-filter:blur(6px);display:none;overflow-y:auto;padding:26px}
+        .room-detail-backdrop.open{display:block;animation:secIn .25s ease}
+        .room-detail-inner{max-width:1100px;margin:0 auto}
+        .room-detail-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px}
+        .room-detail-head h2{font-family:var(--fui);font-size:22px;font-weight:900;color:#fff;letter-spacing:-.03em}
+        @media(max-width:640px){
+            .room-detail-backdrop{padding:14px}
+            .room-detail-head h2{font-size:18px}
         }
     </style>
 </head>
@@ -2008,6 +2037,8 @@
         <div class="s-nav-sec">Tableau de bord</div>
         <a class="nav-btn active" href="#overview" data-sec="overview"><i class="fas fa-compass"></i><span>Vue d'ensemble</span></a>
         <a class="nav-btn" href="#nodes" data-sec="nodes"><i class="fas fa-microchip"></i><span>Nœuds</span></a>
+        <div class="s-nav-sec">Domotique</div>
+        <a class="nav-btn" href="#automation" data-sec="automation"><i class="fas fa-satellite-dish"></i><span>Télécommandes IR</span></a>
         <div class="s-nav-sec">Consommation</div>
         <a class="nav-btn" href="#consumption" data-sec="consumption"><i class="fas fa-chart-pie"></i><span>Consommation</span></a>
         <div class="s-nav-sec">Système</div>
@@ -2154,40 +2185,13 @@
                         <ul class="city-results" id="city-results"></ul>
                     </div>
                     </div>
-                    <div class="panel" style="margin-bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:150px;position:relative;">
-                    <div class="pt" style="margin-bottom:0;font-size:10px;color:var(--t2);position:absolute;top:12px;left:16px;"><i class="fas fa-cube"></i> Modèle 3D interactif</div>
-                    <div class="house-widget" style="position:relative;">
-                        <div class="house-core-glow"></div>
-                        <div class="house-scan"></div>
-                        <div class="house-orbit-ring" style="width:150px;height:150px;"></div>
-                        <div class="house-orbit-ring" style="width:190px;height:190px;"></div>
-                        <span class="house-sensor-dot"></span>
-                        <span class="house-sensor-dot"></span>
-                        <span class="house-sensor-dot"></span>
-                        <div class="house-3d-dash" id="house3d">
-                            <svg class="house-wire-svg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                <defs>
-                                    <linearGradient id="h3gMark" x1="0%" y1="0%" x2="100%" y2="100%">
-                                        <stop offset="0%" stop-color="#00f5a0"/><stop offset="60%" stop-color="#00d4e0"/><stop offset="100%" stop-color="#4d8dff"/>
-                                    </linearGradient>
-                                    <filter id="h3glow"><feGaussianBlur stdDeviation="3.5" result="cb"/><feMerge><feMergeNode in="cb"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-                                </defs>
-                                <path class="house-wire-line house-wire-soft" d="M14 98H106M20 88H100M28 78H92" stroke-width="1.2"/>
-                                <path class="house-wire-line" d="M20 96V48L60 16L100 48V96H20Z" stroke-width="3.2" filter="url(#h3glow)"/>
-                                <path class="house-wire-line house-wire-soft" d="M20 48H100M60 16V96M20 96L100 48M100 96L20 48" stroke-width="1.2"/>
-                                <path class="house-wire-line" d="M28 56H46V72H28ZM74 56H92V72H74Z" stroke-width="1.9"/>
-                                <path class="house-wire-line house-wire-soft" d="M37 56V72M83 56V72M46 68H74M46 82H74" stroke-width="1.1"/>
-                                <path class="house-wire-line" d="M46 96V70Q60 58 74 70V96" stroke-width="2.7"/>
-                                <path class="house-wire-line" d="M45 40Q60 27 75 40" stroke-width="3" filter="url(#h3glow)"/>
-                                <path class="house-wire-line house-wire-soft" d="M36 32Q60 14 84 32M27 24Q60 1 93 24" stroke-width="2"/>
-                                <circle class="house-wire-node" cx="60" cy="16" r="4.8" filter="url(#h3glow)"/>
-                                <circle class="house-wire-node" cx="60" cy="50" r="5.2" filter="url(#h3glow)"/>
-                                <circle class="house-wire-node" cx="20" cy="96" r="3.2"/>
-                                <circle class="house-wire-node" cx="100" cy="96" r="3.2"/>
-                            </svg>
-                        </div>
+                    <div class="panel" style="margin-bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:260px;position:relative;">
+                    <div class="pt" style="margin-bottom:0;font-size:10px;color:var(--t2);position:absolute;top:12px;left:16px;z-index:5"><i class="fas fa-cube"></i> Maquette 3D — cliquez une pièce</div>
+                    <div id="house3d-container" style="position:relative;width:100%;height:230px;cursor:grab">
+                        <canvas id="house3d-canvas" style="width:100%;height:100%;display:block"></canvas>
                     </div>
-                    <div style="font-size:9px;font-family:var(--fmono);color:var(--t2);letter-spacing:1.5px;margin-top:6px">GLISSEZ POUR TOURNER 🖱️</div>
+                    <div id="house3d-legend" style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:4px"></div>
+                    <div style="font-size:9px;font-family:var(--fmono);color:var(--t2);letter-spacing:1.5px;margin-top:4px">GLISSEZ POUR TOURNER 🖱️ · CLIQUEZ UNE PIÈCE</div>
                 </div>
                 </div>
             </div>
@@ -2262,6 +2266,79 @@
             <div class="gauto" id="nodes-container"><div class="empty"><i class="fas fa-spinner fa-spin"></i></div></div>
         </section>
 
+        <!-- ═══ IR REMOTE (AUTOMATION) ═══ -->
+        <section id="automation" class="sec">
+            <div class="sh">
+                <h2 id="automation-title">📡 Télécommandes IR</h2>
+                <div style="display:flex;gap:8px">
+                    <button class="btn sm" id="ir-clear-filter-btn" style="display:none" onclick="clearIrRoomFilter()"><i class="fas fa-arrow-left"></i> Tous les appareils</button>
+                    <button class="btn" onclick="openAddDeviceModal()"><i class="fas fa-plus"></i> Ajouter un appareil</button>
+                </div>
+            </div>
+            <div class="gauto" id="ir-devices-container"><div class="empty"><i class="fas fa-spinner fa-spin"></i></div></div>
+        </section>
+
+        <!-- Add device modal -->
+        <div class="ir-modal-backdrop" id="ir-add-device-modal">
+            <div class="ir-modal">
+                <h3><i class="fas fa-plus"></i> Nouvel appareil</h3>
+                <label>Nom (ex: TV Salon, Climatiseur)</label>
+                <input type="text" id="ir-device-name" placeholder="TV Salon">
+                <label>Icône</label>
+                <select id="ir-device-icon">
+                    <option value="fa-tv">📺 TV</option>
+                    <option value="fa-snowflake">❄️ Climatiseur</option>
+                    <option value="fa-fan">🌀 Ventilateur</option>
+                    <option value="fa-lightbulb">💡 Lumière</option>
+                    <option value="fa-music">🎵 Chaîne HiFi</option>
+                </select>
+                <label>Pièce</label>
+                <select id="ir-device-room"></select>
+                <div class="ir-modal-actions">
+                    <button class="btn" onclick="closeIrModal('ir-add-device-modal')">Annuler</button>
+                    <button class="btn" style="background:var(--amber)" onclick="submitAddDevice()">Créer</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Device detail modal: shows actions + lets you add/learn a new one -->
+        <div class="ir-modal-backdrop" id="ir-device-modal">
+            <div class="ir-modal">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <h3 id="ir-device-modal-title"><i class="fas fa-tv"></i> Appareil</h3>
+                    <button class="btn sm" style="border-color:var(--red);color:var(--red)" onclick="deleteCurrentDevice()"><i class="fas fa-trash"></i></button>
+                </div>
+                <div id="ir-actions-list" style="display:flex;flex-direction:column;gap:8px;margin:14px 0"></div>
+                <div style="display:flex;gap:8px;align-items:center">
+                    <input type="text" id="ir-new-action-label" placeholder="Nom du bouton (ex: Allumer)" style="flex:1">
+                    <button class="btn" onclick="startLearnAction()"><i class="fas fa-satellite-dish"></i> Apprendre</button>
+                </div>
+                <div id="ir-learn-status" style="font-size:12px;color:var(--amber);margin-top:8px;display:none">
+                    <i class="fas fa-spinner fa-spin"></i> Pointez la vraie télécommande vers le récepteur et appuyez sur le bouton…
+                </div>
+                <div class="ir-modal-actions"><button class="btn" onclick="closeIrModal('ir-device-modal')">Fermer</button></div>
+            </div>
+        </div>
+
+        <!-- ═══ FULL-SCREEN ROOM DETAIL PANEL (from 3D house) ═══ -->
+        <div class="room-detail-backdrop" id="room-detail-panel">
+            <div class="room-detail-inner">
+                <div class="room-detail-head">
+                    <h2 id="room-detail-title"><i class="fas fa-home"></i> Pièce</h2>
+                    <div style="display:flex;align-items:center;gap:10px">
+                        <span id="room-detail-status"></span>
+                        <button class="btn sm" onclick="goToRoomIrDevices()"><i class="fas fa-satellite-dish"></i> Appareils IR</button>
+                        <button class="btn sm" onclick="closeRoomDetail()"><i class="fas fa-times"></i> Fermer</button>
+                    </div>
+                </div>
+                <div class="g4" id="room-detail-kpis" style="margin-bottom:18px"></div>
+                <div class="panel" id="room-detail-chart-box">
+                    <div class="ph"><div class="pt"><i class="fas fa-chart-line"></i> Historique – 24h</div></div>
+                    <div class="cbox h220"><canvas id="room-detail-chart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
         <!-- ═══ CONSUMPTION ═══ -->
         <section id="consumption" class="sec">
             <div class="sh"><h2>📊 Consommation</h2></div>
@@ -2326,6 +2403,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 "use strict";
 const API_BASE = location.protocol === "file:" ? "https://dashboard-production-9e7c.up.railway.app" : location.origin;
@@ -2667,6 +2745,7 @@ function connectSSE() {
     _sse.onopen = ()=>{setSseDot("ok");clearTimeout(_sseRetryTimer);};
     _sse.addEventListener("sensor",e=>onSensorEvent(JSON.parse(e.data)));
     _sse.addEventListener("alert",e=>onAlertEvent(JSON.parse(e.data)));
+    _sse.addEventListener("ir_learned",e=>onIrLearned(JSON.parse(e.data)));
     _sse.onerror = ()=>{setSseDot("err");_sse.close();_sse=null;_sseRetryTimer=setTimeout(connectSSE,5000);};
 }
 function setSseDot(s) {
@@ -2684,6 +2763,8 @@ function onSensorEvent(d) {
     if(!state.latest[nid]) state.latest[nid]={};
     state.latest[nid][sensor_type]=value; state.nodeSeen[nid]=timestamp;
     flashLiveDot(nid,timestamp); updateCardForNode(nid,sensor_type,value); updateNodeCard(nid);
+    if (typeof updateHouse3DStatus === "function") updateHouse3DStatus(nid);
+    if (roomDetailCurrentNode === nid) renderRoomDetailBody(nid);
     const pt={x:new Date(timestamp).getTime(),y:value};
     if(nid==="kitchen"&&sensor_type==="temperature"&&(_tempFilter==="all"||_tempFilter==="kitchen")) appendChartPoint("temp","Cuisine","var(--green)",pt);
     if(nid==="salon"&&sensor_type==="temperature"&&(_tempFilter==="all"||_tempFilter==="salon")) appendChartPoint("temp","Salon","var(--teal)",pt);
@@ -2803,7 +2884,10 @@ function renderNodeCards() {
             const raw=d[s], txt=raw!=null?m.fmt(raw):"—", isAlert=(s==="gas_detected"||s==="structure_alert")&&raw===1;
             return `<div class="ns" data-sensor="${s}"><i class="fas ${m.icon} ns-icon" style="color:${isAlert?"var(--red)":m.color}"></i><div class="ns-body"><div class="ns-val" style="${isAlert?"color:var(--red)":""}">${txt}</div><div class="ns-lbl">${m.label}</div></div></div>`;
         }).join("");
-        return `<div class="ncard" id="nc-${nid}"><div class="nc-head"><div class="nc-name" style="color:${meta.color}"><i class="fas ${meta.icon}"></i>${meta.label}</div><span class="nc-status ${online?"online":"offline"}">${online?"En ligne":"Hors ligne"}</span></div><div class="nc-sensors">${sensorsHtml}</div><div class="nc-ts">🕐 ${ts}</div></div>`;
+        const irBtn = ROOM_NODE_IDS.includes(nid)
+            ? `<button class="btn sm" style="width:100%;margin-top:10px" onclick="goToNodeDevices('${nid}')"><i class="fas fa-satellite-dish"></i> Appareils IR — ${meta.label}</button>`
+            : "";
+        return `<div class="ncard" id="nc-${nid}"><div class="nc-head"><div class="nc-name" style="color:${meta.color}"><i class="fas ${meta.icon}"></i>${meta.label}</div><span class="nc-status ${online?"online":"offline"}">${online?"En ligne":"Hors ligne"}</span></div><div class="nc-sensors">${sensorsHtml}</div><div class="nc-ts">🕐 ${ts}</div>${irBtn}</div>`;
     }).join("");
 }
 function updateNodeCard(nid) {
@@ -2841,8 +2925,144 @@ function updateAlertBadge() {
     b.textContent=state.alertCount;
 }
 
+/* ══ IR Remote Control ══ */
+const ROOM_NODE_IDS = ["kitchen", "salon", "port", "room"];
+let irDevices = [];
+let irCurrentDeviceId = null;
+let irRoomFilter = null;
+
+function populateRoomSelect() {
+    const sel = document.getElementById("ir-device-room");
+    if (!sel) return;
+    sel.innerHTML = `<option value="">— Aucune pièce —</option>` +
+        ROOM_NODE_IDS.map(id => `<option value="${id}">${NODES[id].label}</option>`).join("");
+}
+
+async function loadIrDevices() {
+    const data = await apiFetch("/api/ir/devices");
+    irDevices = data || [];
+    renderIrDevices();
+}
+function renderIrDevices() {
+    const c = document.getElementById("ir-devices-container");
+    if (!c) return;
+    const titleEl = document.getElementById("automation-title");
+    const clearBtn = document.getElementById("ir-clear-filter-btn");
+    if (irRoomFilter && NODES[irRoomFilter]) {
+        titleEl.innerHTML = `<i class="fas ${NODES[irRoomFilter].icon}"></i> Appareils IR — ${NODES[irRoomFilter].label}`;
+        clearBtn.style.display = "inline-flex";
+    } else {
+        titleEl.innerHTML = `📡 Télécommandes IR`;
+        clearBtn.style.display = "none";
+    }
+    const list = irRoomFilter ? irDevices.filter(d => d.room === irRoomFilter) : irDevices;
+    if (!list.length) {
+        c.innerHTML = `<div class="empty"><i class="fas fa-satellite-dish"></i><p>${irRoomFilter ? "Aucun appareil dans cette pièce." : "Aucun appareil. Ajoutez-en un."}</p></div>`;
+        return;
+    }
+    c.innerHTML = list.map(d => `
+        <div class="ncard ir-device-card" onclick="openDeviceModal(${d.id})">
+            <div class="nc-head">
+                <div class="nc-name"><i class="fas ${d.icon}"></i>${escapeHtml(d.name)}</div>
+                <span class="nc-status online">${d.actions.length} action(s)</span>
+            </div>
+            <div style="font-size:11px;color:var(--t1)">${d.room && NODES[d.room] ? escapeHtml(NODES[d.room].label) : "Sans pièce"}</div>
+        </div>`).join("");
+}
+function goToNodeDevices(roomId) {
+    irRoomFilter = roomId;
+    setActiveNav("automation", true);
+    renderIrDevices();
+}
+function clearIrRoomFilter() {
+    irRoomFilter = null;
+    renderIrDevices();
+}
+function openAddDeviceModal(){
+    populateRoomSelect();
+    if (irRoomFilter) document.getElementById("ir-device-room").value = irRoomFilter;
+    document.getElementById("ir-add-device-modal").classList.add("open");
+}
+function closeIrModal(id){ document.getElementById(id).classList.remove("open"); }
+async function submitAddDevice() {
+    const name = document.getElementById("ir-device-name").value.trim();
+    const icon = document.getElementById("ir-device-icon").value;
+    const room = document.getElementById("ir-device-room").value;
+    if (!name) return;
+    const res = await fetch(`${API_BASE}/api/ir/devices`, {
+        method: "POST", credentials: "include",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({name, icon, room})
+    });
+    if (res.ok) {
+        document.getElementById("ir-device-name").value = "";
+        document.getElementById("ir-device-room").value = "";
+        closeIrModal("ir-add-device-modal");
+        loadIrDevices();
+    }
+}
+function openDeviceModal(deviceId) {
+    irCurrentDeviceId = deviceId;
+    const d = irDevices.find(x => x.id === deviceId);
+    if (!d) return;
+    document.getElementById("ir-device-modal-title").innerHTML = `<i class="fas ${d.icon}"></i> ${escapeHtml(d.name)}`;
+    renderActionsList(d);
+    document.getElementById("ir-device-modal").classList.add("open");
+}
+function renderActionsList(d) {
+    const list = document.getElementById("ir-actions-list");
+    if (!d.actions.length) {
+        list.innerHTML = `<div style="font-size:12px;color:var(--t1)">Aucune action pour l'instant.</div>`;
+        return;
+    }
+    list.innerHTML = d.actions.map(a => a.status === "ready"
+        ? `<div class="ir-action-row"><span>${escapeHtml(a.label)}</span><button class="btn sm" onclick="sendIrAction(${a.id})"><i class="fas fa-bolt"></i> Envoyer</button></div>`
+        : `<div class="ir-action-row"><span>${escapeHtml(a.label)}</span><span class="status-pending"><i class="fas fa-spinner fa-spin"></i> En attente d'apprentissage</span></div>`
+    ).join("");
+}
+async function deleteCurrentDevice() {
+    if (!irCurrentDeviceId) return;
+    if (!confirm("Supprimer cet appareil et toutes ses actions ?")) return;
+    await fetch(`${API_BASE}/api/ir/devices/${irCurrentDeviceId}`, {method:"DELETE", credentials:"include"});
+    closeIrModal("ir-device-modal");
+    loadIrDevices();
+}
+async function startLearnAction() {
+    const label = document.getElementById("ir-new-action-label").value.trim();
+    if (!label || !irCurrentDeviceId) return;
+    const res = await fetch(`${API_BASE}/api/ir/devices/${irCurrentDeviceId}/actions/learn`, {
+        method: "POST", credentials: "include",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({label})
+    });
+    if (res.ok) {
+        document.getElementById("ir-new-action-label").value = "";
+        document.getElementById("ir-learn-status").style.display = "block";
+        await loadIrDevices();
+        const d = irDevices.find(x => x.id === irCurrentDeviceId);
+        if (d) renderActionsList(d);
+    }
+}
+async function sendIrAction(actionId) {
+    await fetch(`${API_BASE}/api/ir/send`, {
+        method: "POST", credentials: "include",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({action_id: actionId})
+    });
+}
+function onIrLearned(d) {
+    document.getElementById("ir-learn-status").style.display = "none";
+    loadIrDevices().then(() => {
+        if (irCurrentDeviceId === d.device_id) {
+            const dev = irDevices.find(x => x.id === d.device_id);
+            if (dev) renderActionsList(dev);
+        }
+    });
+    pushNotif("info", "Télécommande IR", `Bouton appris avec succès.`, new Date().toLocaleString("fr-FR"));
+}
+
 /* ══ Navigation ══ */
-const SEC_TITLES={overview:"Vue d'ensemble",nodes:"Nœuds capteurs",consumption:"Consommation",alerts:"Alertes"};
+const SEC_TITLES={overview:"Vue d'ensemble",nodes:"Nœuds capteurs",consumption:"Consommation",alerts:"Alertes",automation:"Télécommandes IR"};
 function setActiveNav(id,updateHash=false){
     const target=document.getElementById(id) || document.getElementById("overview");
     id=target.id;
@@ -2877,28 +3097,228 @@ document.getElementById("temp-tabs").addEventListener("click",async e=>{
     updateTempChart(kt,st);
 });
 
-/* ══ 3D House drag ══ */
-(function(){
-    const el=document.getElementById("house3d"); if(!el) return;
-    let dragging=false, startX=0, startY=0, rotY=-6, rotX=4;
-    el.addEventListener("mousedown",e=>{dragging=true;startX=e.clientX;startY=e.clientY;el.style.animation="none";el.style.transition="none";});
-    window.addEventListener("mousemove",e=>{
-        if(!dragging) return;
-        rotY+=(e.clientX-startX)*.45; rotX-=(e.clientY-startY)*.45;
-        rotX=Math.max(-35,Math.min(35,rotX));
-        el.style.transform=`rotateY(${rotY}deg) rotateX(${rotX}deg)`;
-        startX=e.clientX; startY=e.clientY;
+/* ══ 3D Digital-Twin House (Three.js) ══ */
+const HOUSE_ROOMS = {
+    kitchen: { pos:[-1.05, 0, -1.05], color:0x8ecf7b, label:"Cuisine" },
+    salon:   { pos:[ 1.05, 0, -1.05], color:0x74bfc2, label:"Salon" },
+    port:    { pos:[-1.05, 0,  1.05], color:0xf4c84d, label:"Porte" },
+    room:    { pos:[ 1.05, 0,  1.05], color:0x8ea8d8, label:"Chambre" },
+};
+let house3d = { scene:null, camera:null, renderer:null, meshes:{}, raycaster:null, mouse:null, rotY:.6, rotX:.42 };
+
+function initHouse3D() {
+    const container = document.getElementById("house3d-container");
+    const canvas = document.getElementById("house3d-canvas");
+    if (!container || !canvas || typeof THREE === "undefined") return;
+    const w = container.clientWidth || 300, h = container.clientHeight || 230;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 100);
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setSize(w, h);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+    const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+    dir.position.set(3, 5, 4);
+    scene.add(dir);
+
+    // base platform
+    const baseGeo = new THREE.CylinderGeometry(2.15, 2.15, 0.08, 48);
+    const baseMat = new THREE.MeshStandardMaterial({ color: 0x1a2233, transparent: true, opacity: 0.35 });
+    const base = new THREE.Mesh(baseGeo, baseMat);
+    base.position.y = -0.42;
+    scene.add(base);
+
+    // roof (simple pyramid over the whole footprint, wireframe only)
+    const roofGeo = new THREE.ConeGeometry(1.9, 0.9, 4);
+    const roofMat = new THREE.MeshBasicMaterial({ color: 0x00f5a0, wireframe: true, transparent: true, opacity: 0.35 });
+    const roof = new THREE.Mesh(roofGeo, roofMat);
+    roof.rotation.y = Math.PI / 4;
+    roof.position.y = 0.85;
+    scene.add(roof);
+
+    house3d.meshes = {};
+    Object.entries(HOUSE_ROOMS).forEach(([nid, r]) => {
+        const geo = new THREE.BoxGeometry(1.7, 0.75, 1.7);
+        const mat = new THREE.MeshStandardMaterial({
+            color: r.color, transparent: true, opacity: 0.55,
+            emissive: r.color, emissiveIntensity: 0.25, roughness: 0.4, metalness: 0.1
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(r.pos[0], 0, r.pos[2]);
+        mesh.userData.nodeId = nid;
+        scene.add(mesh);
+
+        const edges = new THREE.LineSegments(
+            new THREE.EdgesGeometry(geo),
+            new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 })
+        );
+        edges.position.copy(mesh.position);
+        scene.add(edges);
+
+        house3d.meshes[nid] = mesh;
     });
-    window.addEventListener("mouseup",()=>{dragging=false;el.style.animation="";el.style.transition="transform .6s cubic-bezier(.34,1.56,.64,1)";setTimeout(()=>{el.style.transition="transform .1s ease-out";},600);});
-    el.addEventListener("touchstart",e=>{startX=e.touches[0].clientX;startY=e.touches[0].clientY;el.style.animation="none";el.style.transition="none";},{passive:true});
-    el.addEventListener("touchmove",e=>{
-        rotY+=(e.touches[0].clientX-startX)*.45; rotX-=(e.touches[0].clientY-startY)*.45;
-        rotX=Math.max(-35,Math.min(35,rotX));
-        el.style.transform=`rotateY(${rotY}deg) rotateX(${rotX}deg)`;
-        startX=e.touches[0].clientX; startY=e.touches[0].clientY;
-    },{passive:true});
-    el.addEventListener("touchend",()=>{el.style.animation="";el.style.transition="transform .6s cubic-bezier(.34,1.56,.64,1)";setTimeout(()=>{el.style.transition="transform .1s ease-out";},600);});
-})();
+
+    camera.position.set(0, 2.4, 3.6);
+    camera.lookAt(0, 0, 0);
+
+    house3d.scene = scene;
+    house3d.camera = camera;
+    house3d.renderer = renderer;
+    house3d.raycaster = new THREE.Raycaster();
+    house3d.mouse = new THREE.Vector2();
+
+    renderHouseLegend();
+    animateHouse3D();
+    initHouse3DInteraction(container);
+    window.addEventListener("resize", resizeHouse3D);
+}
+
+function resizeHouse3D() {
+    const container = document.getElementById("house3d-container");
+    if (!container || !house3d.renderer) return;
+    const w = container.clientWidth, h = container.clientHeight;
+    if (!w || !h) return;
+    house3d.camera.aspect = w / h;
+    house3d.camera.updateProjectionMatrix();
+    house3d.renderer.setSize(w, h);
+}
+
+function animateHouse3D() {
+    requestAnimationFrame(animateHouse3D);
+    if (!house3d.scene) return;
+    const radius = 3.6;
+    house3d.camera.position.x = radius * Math.sin(house3d.rotY) * Math.cos(house3d.rotX);
+    house3d.camera.position.z = radius * Math.cos(house3d.rotY) * Math.cos(house3d.rotX);
+    house3d.camera.position.y = 1.4 + radius * Math.sin(house3d.rotX);
+    house3d.camera.lookAt(0, 0, 0);
+    house3d.renderer.render(house3d.scene, house3d.camera);
+}
+
+function initHouse3DInteraction(container) {
+    let dragging = false, startX = 0, startY = 0, moved = 0;
+    const onDown = (x, y) => { dragging = true; startX = x; startY = y; moved = 0; container.style.cursor = "grabbing"; };
+    const onMove = (x, y) => {
+        if (!dragging) return;
+        const dx = x - startX, dy = y - startY;
+        moved += Math.abs(dx) + Math.abs(dy);
+        house3d.rotY += dx * 0.008;
+        house3d.rotX = Math.max(-0.5, Math.min(0.9, house3d.rotX + dy * 0.006));
+        startX = x; startY = y;
+    };
+    const onUp = (clientX, clientY) => {
+        dragging = false; container.style.cursor = "grab";
+        if (moved < 6) handleHouse3DClick(clientX, clientY, container);
+    };
+    container.addEventListener("mousedown", e => onDown(e.clientX, e.clientY));
+    window.addEventListener("mousemove", e => onMove(e.clientX, e.clientY));
+    window.addEventListener("mouseup", e => { if (dragging) onUp(e.clientX, e.clientY); });
+    container.addEventListener("touchstart", e => onDown(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+    container.addEventListener("touchmove", e => onMove(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+    container.addEventListener("touchend", e => { const t = e.changedTouches[0]; onUp(t.clientX, t.clientY); });
+}
+
+function handleHouse3DClick(clientX, clientY, container) {
+    const rect = container.getBoundingClientRect();
+    house3d.mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    house3d.mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    house3d.raycaster.setFromCamera(house3d.mouse, house3d.camera);
+    const hits = house3d.raycaster.intersectObjects(Object.values(house3d.meshes));
+    if (hits.length) {
+        const nid = hits[0].object.userData.nodeId;
+        openRoomDetail(nid);
+    }
+}
+
+function updateHouse3DStatus(nid) {
+    const mesh = house3d.meshes && house3d.meshes[nid];
+    if (!mesh) return;
+    const lastSeen = state.nodeSeen[nid];
+    const online = lastSeen ? (Date.now() - new Date(lastSeen).getTime()) < 15000 : false;
+    const d = state.latest[nid] || {};
+    const alert = d.gas_detected === 1 || d.structure_alert === 1;
+    if (alert) {
+        mesh.material.emissive.setHex(0xff4d6b);
+        mesh.material.emissiveIntensity = 0.7;
+        mesh.material.opacity = 0.75;
+    } else if (online) {
+        mesh.material.emissive.setHex(HOUSE_ROOMS[nid].color);
+        mesh.material.emissiveIntensity = 0.35;
+        mesh.material.opacity = 0.6;
+    } else {
+        mesh.material.emissive.setHex(0x333333);
+        mesh.material.emissiveIntensity = 0.05;
+        mesh.material.opacity = 0.3;
+    }
+}
+function updateAllHouse3DStatus() { ROOM_NODE_IDS.forEach(updateHouse3DStatus); }
+
+function renderHouseLegend() {
+    const el = document.getElementById("house3d-legend");
+    if (!el) return;
+    el.innerHTML = ROOM_NODE_IDS.map(nid => `
+        <span style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--t1);cursor:pointer" onclick="openRoomDetail('${nid}')">
+            <span style="width:8px;height:8px;border-radius:50%;background:#${HOUSE_ROOMS[nid].color.toString(16).padStart(6,'0')}"></span>
+            ${NODES[nid].label}
+        </span>`).join("");
+}
+
+/* ══ Full-screen room detail panel ══ */
+let roomDetailCurrentNode = null;
+let roomDetailChart = null;
+
+function openRoomDetail(nid) {
+    roomDetailCurrentNode = nid;
+    const meta = NODES[nid];
+    if (!meta) return;
+    document.getElementById("room-detail-title").innerHTML = `<i class="fas ${meta.icon}"></i> ${meta.label}`;
+    renderRoomDetailBody(nid);
+    document.getElementById("room-detail-panel").classList.add("open");
+    loadRoomDetailHistory(nid);
+}
+function closeRoomDetail() {
+    document.getElementById("room-detail-panel").classList.remove("open");
+    if (roomDetailChart) { roomDetailChart.destroy(); roomDetailChart = null; }
+}
+function renderRoomDetailBody(nid) {
+    const meta = NODES[nid];
+    const d = state.latest[nid] || {};
+    const lastSeen = state.nodeSeen[nid];
+    const online = lastSeen ? (Date.now() - new Date(lastSeen).getTime()) < 15000 : false;
+    document.getElementById("room-detail-status").innerHTML =
+        `<span class="nc-status ${online ? "online" : "offline"}">${online ? "En ligne" : "Hors ligne"}</span>
+         <span style="font-size:11px;color:var(--t1);margin-left:8px">🕐 ${lastSeen ? new Date(lastSeen).toLocaleTimeString("fr-FR") : "jamais"}</span>`;
+    document.getElementById("room-detail-kpis").innerHTML = meta.sensors.map(s => {
+        const m = SENSOR_META[s] || { icon: "fa-question", color: "var(--t1)", label: s, fmt: v => v };
+        const raw = d[s], txt = raw != null ? m.fmt(raw) : "—";
+        const isAlert = (s === "gas_detected" || s === "structure_alert") && raw === 1;
+        return `<div class="kcard tilt-card"><div class="tilt-card-inner">
+            <div class="kcard-top"><span class="kcard-lbl">${m.label}</span><i class="fas ${m.icon} kcard-icon" style="color:${isAlert ? "var(--red)" : m.color}"></i></div>
+            <div class="kcard-val" style="${isAlert ? "color:var(--red)" : ""}">${txt}</div>
+        </div></div>`;
+    }).join("");
+}
+async function loadRoomDetailHistory(nid) {
+    const meta = NODES[nid];
+    const numericSensor = meta.sensors.find(s => ["temperature", "humidity", "luminosity"].includes(s));
+    const box = document.getElementById("room-detail-chart-box");
+    if (!numericSensor) { box.style.display = "none"; return; }
+    box.style.display = "block";
+    const rows = await apiFetch(`/api/history?node_id=${nid}&sensor_type=${numericSensor}&hours=${HISTORY_HOURS}`);
+    const m = SENSOR_META[numericSensor];
+    if (roomDetailChart) roomDetailChart.destroy();
+    roomDetailChart = new Chart(document.getElementById("room-detail-chart"), {
+        type: "line",
+        data: { datasets: [mkDS(m.label, "var(--teal)", toXY(rows))] },
+        options: lineOpts(m.label)
+    });
+}
+function goToRoomIrDevices() {
+    if (!roomDetailCurrentNode) return;
+    closeRoomDetail();
+    goToNodeDevices(roomDetailCurrentNode);
+}
 
 /* ══ 3D Tilt effect on cards ══ */
 (function(){
@@ -3344,6 +3764,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
     document.getElementById("app").classList.add("visible");
     initAccountMenu();
     initCharts();
+    initHouse3D();
     const loggedInFull=await loadUser();
     if(!loggedInFull) return;
     setTimeout(async()=>{
@@ -3354,6 +3775,8 @@ document.addEventListener("DOMContentLoaded",async()=>{
         await loadAverages();
         await loadHistory();
         renderNodeCards();
+        loadIrDevices();
+        updateAllHouse3DStatus();
         await loadAlerts();
         connectSSE();
         setTimeout(()=>{document.getElementById("welcome-overlay").style.display="none";},700);
