@@ -159,6 +159,43 @@ def init_db():
         con.execute("CREATE INDEX IF NOT EXISTS idx_readings_user ON readings   (user_id, node_id, sensor_type, timestamp)")
         con.execute("CREATE INDEX IF NOT EXISTS idx_alerts_user   ON alerts     (user_id, acked)")
         con.execute("CREATE INDEX IF NOT EXISTS idx_tokens        ON api_tokens (token)")
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS ir_devices (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id    INTEGER NOT NULL,
+                name       TEXT NOT NULL,
+                icon       TEXT DEFAULT 'fa-tv',
+                room       TEXT,
+                created_at TEXT DEFAULT (datetime('now')),
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        """)
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS ir_actions (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                device_id  INTEGER NOT NULL,
+                user_id    INTEGER NOT NULL,
+                label      TEXT NOT NULL,
+                code       TEXT,
+                status     TEXT NOT NULL DEFAULT 'pending_learn',
+                created_at TEXT DEFAULT (datetime('now')),
+                FOREIGN KEY (device_id) REFERENCES ir_devices(id)
+            )
+        """)
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS ir_commands (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id    INTEGER NOT NULL,
+                type       TEXT NOT NULL,
+                device_id  INTEGER NOT NULL,
+                action_id  INTEGER NOT NULL,
+                code       TEXT,
+                status     TEXT NOT NULL DEFAULT 'pending',
+                created_at TEXT DEFAULT (datetime('now'))
+            )
+        """)
+        con.execute("CREATE INDEX IF NOT EXISTS idx_ir_actions_device  ON ir_actions  (device_id)")
+        con.execute("CREATE INDEX IF NOT EXISTS idx_ir_commands_status ON ir_commands (user_id, status)")
         con.commit()
     print("Database ready at:", DB_PATH)
 
@@ -892,6 +929,187 @@ def admin_delete_user(user_id):
         con.execute("DELETE FROM api_tokens WHERE user_id=?", (user_id,))
         con.execute("DELETE FROM users      WHERE id=?",      (user_id,))
         con.commit()
+    return jsonify({"ok": True})
+
+
+# ============================================================
+#  IR REMOTE — devices & actions (dashboard side)
+# ============================================================
+@app.route("/api/ir/devices", methods=["GET"])
+@login_required
+def ir_list_devices():
+    db = sqlite3.connect(DB_PATH)
+    db.row_factory = sqlite3.Row
+    devices = db.execute(
+        "SELECT * FROM ir_devices WHERE user_id=? ORDER BY created_at", (current_user.id,)
+    ).fetchall()
+    result = []
+    for d in devices:
+        actions = db.execute(
+            "SELECT id,label,status,code FROM ir_actions WHERE device_id=? ORDER BY created_at",
+            (d["id"],)
+        ).fetchall()
+        result.append({
+            "id": d["id"], "name": d["name"], "icon": d["icon"], "room": d["room"],
+            "actions": [{"id": a["id"], "label": a["label"], "status": a["status"],
+                         "has_code": a["code"] is not None} for a in actions]
+        })
+    db.close()
+    return jsonify(result)
+
+
+@app.route("/api/ir/devices", methods=["POST"])
+@login_required
+def ir_add_device():
+    data = request.get_json(silent=True) or {}
+    name = str(data.get("name", "")).strip()
+    icon = str(data.get("icon", "fa-tv")).strip() or "fa-tv"
+    room = str(data.get("room", "")).strip() or None
+    if not name:
+        return jsonify({"error": "Nom requis."}), 400
+    with sqlite3.connect(DB_PATH) as con:
+        cur = con.execute(
+            "INSERT INTO ir_devices (user_id,name,icon,room) VALUES (?,?,?,?)",
+            (current_user.id, name, icon, room)
+        )
+        con.commit()
+    return jsonify({"id": cur.lastrowid, "name": name, "icon": icon, "room": room, "actions": []}), 201
+
+
+@app.route("/api/ir/devices/<int:device_id>", methods=["DELETE"])
+@login_required
+def ir_delete_device(device_id):
+    with sqlite3.connect(DB_PATH) as con:
+        owned = con.execute(
+            "SELECT id FROM ir_devices WHERE id=? AND user_id=?", (device_id, current_user.id)
+        ).fetchone()
+        if not owned:
+            return jsonify({"error": "Introuvable."}), 404
+        con.execute("DELETE FROM ir_actions WHERE device_id=?", (device_id,))
+        con.execute("DELETE FROM ir_devices WHERE id=?", (device_id,))
+        con.commit()
+    return jsonify({"ok": True})
+
+
+@app.route("/api/ir/devices/<int:device_id>/actions/learn", methods=["POST"])
+@login_required
+def ir_learn_action(device_id):
+    """Create a new action and ask the Pi/STM32 to capture the next IR code."""
+    data  = request.get_json(silent=True) or {}
+    label = str(data.get("label", "")).strip()
+    if not label:
+        return jsonify({"error": "Nom de l'action requis."}), 400
+    with sqlite3.connect(DB_PATH) as con:
+        owned = con.execute(
+            "SELECT id FROM ir_devices WHERE id=? AND user_id=?", (device_id, current_user.id)
+        ).fetchone()
+        if not owned:
+            return jsonify({"error": "Appareil introuvable."}), 404
+        cur = con.execute(
+            "INSERT INTO ir_actions (device_id,user_id,label,status) VALUES (?,?,?, 'pending_learn')",
+            (device_id, current_user.id, label)
+        )
+        action_id = cur.lastrowid
+        cmd = con.execute(
+            "INSERT INTO ir_commands (user_id,type,device_id,action_id,status) VALUES (?, 'learn', ?, ?, 'pending')",
+            (current_user.id, device_id, action_id)
+        )
+        con.commit()
+    return jsonify({"action_id": action_id, "command_id": cmd.lastrowid}), 201
+
+
+@app.route("/api/ir/actions/<int:action_id>", methods=["DELETE"])
+@login_required
+def ir_delete_action(action_id):
+    with sqlite3.connect(DB_PATH) as con:
+        owned = con.execute(
+            "SELECT id FROM ir_actions WHERE id=? AND user_id=?", (action_id, current_user.id)
+        ).fetchone()
+        if not owned:
+            return jsonify({"error": "Introuvable."}), 404
+        con.execute("DELETE FROM ir_actions WHERE id=?", (action_id,))
+        con.execute("DELETE FROM ir_commands WHERE action_id=?", (action_id,))
+        con.commit()
+    return jsonify({"ok": True})
+
+
+@app.route("/api/ir/send", methods=["POST"])
+@login_required
+def ir_send_action():
+    data = request.get_json(silent=True) or {}
+    action_id = data.get("action_id")
+    db = sqlite3.connect(DB_PATH)
+    db.row_factory = sqlite3.Row
+    action = db.execute(
+        "SELECT * FROM ir_actions WHERE id=? AND user_id=?", (action_id, current_user.id)
+    ).fetchone()
+    if not action:
+        db.close()
+        return jsonify({"error": "Action introuvable."}), 404
+    if action["status"] != "ready" or not action["code"]:
+        db.close()
+        return jsonify({"error": "Cette action n'a pas encore de code IR appris."}), 400
+    db.execute(
+        "INSERT INTO ir_commands (user_id,type,device_id,action_id,code,status) VALUES (?, 'send', ?, ?, ?, 'pending')",
+        (current_user.id, action["device_id"], action_id, action["code"])
+    )
+    db.commit()
+    db.close()
+    return jsonify({"ok": True}), 201
+
+
+# ============================================================
+#  IR REMOTE — Pi side (token auth)
+# ============================================================
+@app.route("/api/pi/commands", methods=["GET"])
+@require_token
+def pi_get_commands():
+    """The Pi polls this periodically for anything queued for it."""
+    user = request.token_user
+    db = sqlite3.connect(DB_PATH)
+    db.row_factory = sqlite3.Row
+    rows = db.execute(
+        "SELECT * FROM ir_commands WHERE user_id=? AND status='pending' ORDER BY created_at",
+        (user.id,)
+    ).fetchall()
+    ids = [r["id"] for r in rows]
+    if ids:
+        db.execute(f"UPDATE ir_commands SET status='sent' WHERE id IN ({','.join('?'*len(ids))})", ids)
+        db.commit()
+    db.close()
+    return jsonify([{
+        "id": r["id"], "type": r["type"], "device_id": r["device_id"],
+        "action_id": r["action_id"], "code": r["code"]
+    } for r in rows])
+
+
+@app.route("/api/pi/ir/learned", methods=["POST"])
+@require_token
+def pi_ir_learned():
+    """Pi reports back the code the STM32 just captured off the real remote."""
+    user = request.token_user
+    data = request.get_json(silent=True) or {}
+    command_id = data.get("command_id")
+    code       = str(data.get("code", "")).strip()
+    if not command_id or not code:
+        return jsonify({"error": "command_id et code requis"}), 400
+    db = sqlite3.connect(DB_PATH)
+    db.row_factory = sqlite3.Row
+    cmd = db.execute(
+        "SELECT * FROM ir_commands WHERE id=? AND user_id=?", (command_id, user.id)
+    ).fetchone()
+    if not cmd:
+        db.close()
+        return jsonify({"error": "Commande introuvable."}), 404
+    db.execute("UPDATE ir_actions SET code=?, status='ready' WHERE id=?", (code, cmd["action_id"]))
+    db.execute("UPDATE ir_commands SET status='done' WHERE id=?", (command_id,))
+    db.commit()
+    action_id, device_id = cmd["action_id"], cmd["device_id"]
+    db.close()
+    # push live update to the dashboard (reuses the existing SSE channel)
+    sse_push_to_user(user.id, "ir_learned", {
+        "action_id": action_id, "device_id": device_id, "code": code
+    })
     return jsonify({"ok": True})
 
 
