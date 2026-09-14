@@ -548,7 +548,7 @@ input:focus{border-color:rgba(244,200,77,.88);box-shadow:0 0 0 4px rgba(244,200,
 
 <script>
 "use strict";
-const API_BASE = window.location.origin;
+const API_BASE = location.protocol === "file:" ? "https://dashboard-production-9e7c.up.railway.app" : window.location.origin;
 const DASHBOARD_URL = location.protocol === "file:" || location.pathname.endsWith(".html") ? "index.html" : "/dashboard";
 const LOCAL_ACCOUNT_KEY = "bs_local_account";
 const LOCAL_SESSION_KEY = "bs_local_session";
